@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Pulse</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <h1 class="site-header__title">
+        <span class="site-header__logo" aria-hidden="true">&#9679;</span>
+        Project Pulse
+      </h1>
+      <p class="site-header__tagline">A live snapshot of what the team is building right now</p>
+    </div>
+    <nav class="site-header__meta" aria-label="Dashboard summary">
+      <span class="site-header__meta-item">
+        <span class="site-header__meta-label">Projects tracked</span>
+        <span class="site-header__meta-value" id="project-count">&ndash;</span>
+      </span>
+      <span class="site-header__meta-item">
+        <span class="site-header__meta-label">Last refreshed</span>
+        <span class="site-header__meta-value" id="last-refreshed">just now</span>
+      </span>
+    </nav>
+  </header>
+
+  <main class="dashboard" id="dashboard" aria-label="Project cards">
+
+    <!--
+      Dynamic project cards are rendered here at runtime by the script
+      below, one `.project-card` per entry in project-data.json's
+      `projects` array. See the script block for the markup contract.
+    -->
+
+  </main>
+
+  <p class="dashboard-empty" id="dashboard-empty" hidden>
+    No projects to show yet. Once <code>project-data.json</code> has entries,
+    they'll appear here automatically.
+  </p>
+
+  <script>
+    // ------------------------------------------------------------------
+    // Data-loading + rendering logic.
+    //
+    // Fetches project-data.json (must be served over http(s), not
+    // file://), renders one `.project-card` per entry into `#dashboard`,
+    // and keeps the header summary bar (`#project-count`,
+    // `#last-refreshed`) in sync with what was actually rendered.
+    // ------------------------------------------------------------------
+
+    const KNOWN_STATUSES = ['active', 'at risk', 'blocked', 'completed'];
+    const KNOWN_PRIORITIES = ['high', 'medium', 'low'];
+
+    // Turns "at risk" -> "at-risk", "High" -> "high", undefined -> "unknown".
+    function slugify(value) {
+      if (typeof value !== 'string' || value.trim() === '') {
+        return 'unknown';
+      }
+      return value.trim().toLowerCase().replace(/\s+/g, '-');
+    }
+
+    function badgeModifierClass(prefix, value, knownValues) {
+      const slug = slugify(value);
+      const isKnown = knownValues.some((known) => slugify(known) === slug);
+      return `${prefix}-${isKnown ? slug : 'unknown'}`;
+    }
+
+    // "at risk" -> "At risk", undefined -> "Unknown".
+    function displayLabel(value) {
+      if (typeof value !== 'string' || value.trim() === '') {
+        return 'Unknown';
+      }
+      const trimmed = value.trim();
+      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }
+
+    function fallbackText(value) {
+      return typeof value === 'string' && value.trim() !== '' ? value : 'Unknown';
+    }
+
+    function buildProjectCard(project) {
+      const name = fallbackText(project && project.name);
+      const owner = fallbackText(project && project.owner);
+      const status = project && project.status;
+      const priority = project && project.priority;
+      const recentActivity = fallbackText(project && project.recentActivity);
+
+      const statusClass = badgeModifierClass('badge--status', status, KNOWN_STATUSES);
+      const priorityClass = badgeModifierClass('badge--priority', priority, KNOWN_PRIORITIES);
+      const statusLabel = displayLabel(status);
+      const priorityLabel = displayLabel(priority);
+
+      const article = document.createElement('article');
+      article.className = 'project-card';
+      article.dataset.status = typeof status === 'string' ? status : 'unknown';
+      article.dataset.priority = typeof priority === 'string' ? priority : 'unknown';
+
+      article.innerHTML = `
+        <header class="project-card__header">
+          <h2 class="project-card__name">${escapeHtml(name)}</h2>
+          <span class="project-card__owner">
+            <span class="project-card__owner-label">Owner:</span> ${escapeHtml(owner)}
+          </span>
+        </header>
+
+        <div class="project-card__badges">
+          <span class="badge badge--status ${statusClass}" role="status">
+            <span class="badge__dot" aria-hidden="true"></span>
+            <span class="visually-hidden">Status: </span>${escapeHtml(statusLabel)}
+          </span>
+          <span class="badge badge--priority ${priorityClass}" aria-label="Priority: ${escapeHtml(priorityLabel)}">
+            <span class="visually-hidden">Priority: </span>${escapeHtml(priorityLabel)} priority
+          </span>
+        </div>
+
+        <p class="project-card__activity">
+          <span class="project-card__activity-label">Recent activity:</span>
+          ${escapeHtml(recentActivity)}
+        </p>
+      `;
+
+      return article;
+    }
+
+    function escapeHtml(value) {
+      const div = document.createElement('div');
+      div.textContent = value;
+      return div.innerHTML;
+    }
+
+    function updateSummaryBar(count) {
+      const countEl = document.getElementById('project-count');
+      const refreshedEl = document.getElementById('last-refreshed');
+      if (countEl) {
+        countEl.textContent = String(count);
+      }
+      if (refreshedEl) {
+        refreshedEl.textContent = new Date().toLocaleString();
+      }
+    }
+
+    function showEmptyState(dashboard, emptyState) {
+      if (emptyState) {
+        emptyState.hidden = false;
+      }
+      if (dashboard) {
+        dashboard.hidden = true;
+      }
+    }
+
+    function showErrorState(dashboard, message) {
+      if (!dashboard) {
+        return;
+      }
+      dashboard.hidden = false;
+      dashboard.innerHTML = '';
+      const errorEl = document.createElement('p');
+      errorEl.className = 'dashboard-error';
+      errorEl.setAttribute('role', 'alert');
+      errorEl.textContent = message;
+      dashboard.appendChild(errorEl);
+    }
+
+    function renderProjects(data) {
+      const dashboard = document.getElementById('dashboard');
+      const emptyState = document.getElementById('dashboard-empty');
+      const projects = data && Array.isArray(data.projects) ? data.projects : [];
+
+      if (!dashboard) {
+        return;
+      }
+
+      dashboard.innerHTML = '';
+
+      if (projects.length === 0) {
+        showEmptyState(dashboard, emptyState);
+        updateSummaryBar(0);
+        return;
+      }
+
+      if (emptyState) {
+        emptyState.hidden = true;
+      }
+      dashboard.hidden = false;
+
+      projects.forEach((project) => {
+        dashboard.appendChild(buildProjectCard(project));
+      });
+
+      updateSummaryBar(projects.length);
+    }
+
+    function loadProjects() {
+      fetch('project-data.json')
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          renderProjects(data);
+        })
+        .catch((error) => {
+          console.error('Failed to load project-data.json:', error);
+          const dashboard = document.getElementById('dashboard');
+          const emptyState = document.getElementById('dashboard-empty');
+          if (emptyState) {
+            emptyState.hidden = true;
+          }
+          showErrorState(
+            dashboard,
+            'Unable to load project data. Please make sure the app is served ' +
+              'via a local server (see .vscode/launch.json) and try again.'
+          );
+          updateSummaryBar(0);
+        });
+    }
+
+    loadProjects();
+  </script>
+
+</body>
+</html>

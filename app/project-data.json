@@ -1,0 +1,46 @@
+{
+  "projects": [
+    {
+      "name": "Customer Portal Redesign",
+      "owner": "Priya Nair",
+      "status": "active",
+      "recentActivity": "Merged the new navigation component and started QA on the account settings flow.",
+      "priority": "high"
+    },
+    {
+      "name": "Q3 Marketing Analytics Pipeline Modernization and Legacy Reporting Decommission Initiative",
+      "owner": "Sam Okafor",
+      "status": "at risk",
+      "recentActivity": "Data warehouse migration slipped a week due to schema conflicts.",
+      "priority": "high"
+    },
+    {
+      "name": "Mobile App Offline Mode",
+      "owner": "Jordan Lee",
+      "status": "blocked",
+      "recentActivity": "Waiting on updated API contract from the platform team before sync logic can be finalized.",
+      "priority": "medium"
+    },
+    {
+      "name": "Internal Docs Refresh",
+      "owner": "Mona Ibrahim",
+      "status": "completed",
+      "recentActivity": "Published the final revision and archived the old wiki pages.",
+      "priority": "low"
+    },
+    {
+      "name": "Payments Fraud Detection Model",
+      "owner": "Diego Ramirez",
+      "status": "active",
+      "recentActivity": "Retrained the model on the latest transaction dataset; precision improved from 0.87 to 0.93 after tuning the feature set, adjusting class weights to account for the rare fraud cases, and re-running validation across the last six months of holdout data to confirm the gains held up under distribution shift.",
+      "priority": "high"
+    },
+    {
+      "name": "Onboarding Email Templates",
+      "owner": "Taylor Brooks",
+      "status": "active",
+      "recentActivity": "Drafted three new templates and sent them for stakeholder review.",
+      "priority": "low"
+    }
+  ]
+}

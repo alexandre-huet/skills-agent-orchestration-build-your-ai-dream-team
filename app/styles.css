@@ -1,0 +1,423 @@
+/* ==========================================================================
+   Project Pulse — Dashboard Styles
+   ==========================================================================
+   Color system:
+     - Neutral surface/text scale (slate) for chrome, cards, and body copy.
+     - Status badges use a semantic traffic-light-adjacent palette:
+         active    -> green   (healthy / on track)
+         at risk   -> amber   (needs attention)
+         blocked   -> red     (stopped / urgent)
+         completed -> gray    (done, de-emphasized)
+         unknown   -> violet  (fallback for unrecognized values, so nothing
+                                renders invisibly or unstyled)
+     - Priority badges use a separate, cooler-toned scale (indigo/blue/teal)
+       so they are visually distinct from status badges even though both
+       are "badges" — priority is an attribute of the work, status is a
+       state of the work, and the palettes intentionally don't overlap.
+   Layout approach:
+     - `.dashboard` is a responsive CSS Grid (auto-fill/minmax) so cards
+       reflow naturally from 1 column (mobile) to multiple columns
+       (tablet/desktop) without media-query breakpoints doing the heavy
+       lifting — the grid algorithm handles it.
+     - Cards use flex column layout internally so header/badges/activity
+       stack predictably and the card height adapts to content.
+   Accessibility:
+     - Color is never the only signal: badges include a text label plus a
+       shape/dot indicator, and status/priority are additionally exposed
+       via visually-hidden prefix text for assistive tech.
+     - Contrast ratios target WCAG AA (4.5:1 body text, 3:1 large text/UI).
+     - Focus-visible states are provided for any interactive elements.
+   ========================================================================== */
+
+:root {
+  --color-bg: #f4f6fb;
+  --color-surface: #ffffff;
+  --color-border: #e2e6f0;
+  --color-text: #1c2333;
+  --color-text-muted: #5b6478;
+  --color-text-faint: #838d9e;
+  --color-accent: #3454d1;
+  --color-accent-soft: #e9edfb;
+
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(28, 35, 51, 0.06);
+  --shadow-md: 0 4px 14px rgba(28, 35, 51, 0.08);
+  --shadow-lg: 0 10px 28px rgba(28, 35, 51, 0.12);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Status palette */
+  --status-active-bg: #e3f7ea;
+  --status-active-text: #146c3a;
+  --status-active-dot: #22a35a;
+
+  --status-atrisk-bg: #fef3e0;
+  --status-atrisk-text: #8a5a05;
+  --status-atrisk-dot: #e2960b;
+
+  --status-blocked-bg: #fdeaea;
+  --status-blocked-text: #a11f1f;
+  --status-blocked-dot: #d63b3b;
+
+  --status-completed-bg: #eceef2;
+  --status-completed-text: #4a5568;
+  --status-completed-dot: #8a94a6;
+
+  --status-unknown-bg: #f1e9fb;
+  --status-unknown-text: #6b3fa0;
+  --status-unknown-dot: #8a5cc9;
+
+  /* Priority palette */
+  --priority-high-bg: #fde8ef;
+  --priority-high-text: #9c1a4d;
+
+  --priority-medium-bg: #e8f0fe;
+  --priority-medium-text: #1d4ed8;
+
+  --priority-low-bg: #e6f7f5;
+  --priority-low-text: #0f766e;
+
+  --priority-unknown-bg: #f1f2f4;
+  --priority-unknown-text: #52525b;
+}
+
+/* ---------------------------------- Reset / base ------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, #eef1fb 0%, var(--color-bg) 45%);
+  color: var(--color-text);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    Arial, sans-serif;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------- Header ------------------------------ */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.site-header__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.site-header__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.site-header__logo {
+  color: var(--color-accent);
+  font-size: 0.6em;
+}
+
+.site-header__tagline {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.site-header__meta {
+  display: flex;
+  gap: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+.site-header__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-header__meta-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-faint);
+}
+
+.site-header__meta-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* ---------------------------------- Dashboard grid ----------------------- */
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-5);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-7);
+}
+
+.dashboard-empty {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 1.05rem;
+}
+
+/* ---------------------------------- Project card ------------------------- */
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+  min-width: 0; /* allow children to truncate instead of overflowing grid */
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.project-card:hover,
+.project-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.project-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.project-card__name {
+  font-size: 1.15rem;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.project-card__owner {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card__owner-label {
+  color: var(--color-text-faint);
+}
+
+.project-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.project-card__activity {
+  margin: 0;
+  font-size: 0.925rem;
+  color: var(--color-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.project-card__activity-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-faint);
+  margin-bottom: var(--space-1);
+}
+
+/* ---------------------------------- Badges -------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Status variants */
+.badge--status-active {
+  background: var(--status-active-bg);
+  color: var(--status-active-text);
+}
+.badge--status-active .badge__dot {
+  background: var(--status-active-dot);
+}
+
+.badge--status-at-risk {
+  background: var(--status-atrisk-bg);
+  color: var(--status-atrisk-text);
+}
+.badge--status-at-risk .badge__dot {
+  background: var(--status-atrisk-dot);
+}
+
+.badge--status-blocked {
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked-text);
+}
+.badge--status-blocked .badge__dot {
+  background: var(--status-blocked-dot);
+}
+
+.badge--status-completed {
+  background: var(--status-completed-bg);
+  color: var(--status-completed-text);
+}
+.badge--status-completed .badge__dot {
+  background: var(--status-completed-dot);
+}
+
+/* Fallback for any status value the CSS doesn't explicitly recognize */
+.badge--status-unknown {
+  background: var(--status-unknown-bg);
+  color: var(--status-unknown-text);
+}
+.badge--status-unknown .badge__dot {
+  background: var(--status-unknown-dot);
+}
+
+/* Priority variants */
+.badge--priority-high {
+  background: var(--priority-high-bg);
+  color: var(--priority-high-text);
+}
+
+.badge--priority-medium {
+  background: var(--priority-medium-bg);
+  color: var(--priority-medium-text);
+}
+
+.badge--priority-low {
+  background: var(--priority-low-bg);
+  color: var(--priority-low-text);
+}
+
+/* Fallback for any priority value the CSS doesn't explicitly recognize */
+.badge--priority-unknown {
+  background: var(--priority-unknown-bg);
+  color: var(--priority-unknown-text);
+}
+
+/* ---------------------------------- Focus states -------------------------- */
+
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------- Responsive tuning --------------------- */
+
+@media (max-width: 480px) {
+  .site-header {
+    padding: var(--space-5) var(--space-4) var(--space-4);
+  }
+
+  .site-header__meta {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .dashboard {
+    grid-template-columns: 1fr;
+    padding: 0 var(--space-4) var(--space-6);
+    gap: var(--space-4);
+  }
+
+  .project-card {
+    padding: var(--space-4);
+  }
+}
+
+@media (min-width: 481px) and (max-width: 900px) {
+  .dashboard {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .dashboard {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
